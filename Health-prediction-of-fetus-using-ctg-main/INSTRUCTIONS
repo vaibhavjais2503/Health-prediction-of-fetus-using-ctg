@@ -1,0 +1,27 @@
+git clone https://github.com/cliffsandroses/Health-prediction-of-fetus-using-ctg
+
+cd Health-prediction-of-fetus-using-ctg
+
+python -m venv .venv
+
+# On Windows:
+.venv\Scripts\activate
+# On Linux/Mac:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+
+mkdir -p data models logs reports uploads backups config
+
+python setup_database.py
+
+python security_utils.py
+
+python create_user.py
+
+python Model_Training.py
+
+streamlit run app.py
+
+# The application will be accessible at http://localhost:8501
+# If the scripts show any problem please inform me

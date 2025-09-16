@@ -1,0 +1,54 @@
+# Application Configuration
+
+# Security Settings
+secret_key: "your-secret-key-here"
+encryption_key: "your-encryption-key-here"
+
+# Database Configuration
+database_path: "data/fetal_health.db"
+
+# Model Paths
+model_paths:
+  Random Forest: "models/random_forest_model.pkl"
+  Gradient Boosting: "models/gradient_boosting_model.pkl"
+  SVM: "models/svm_model.pkl"
+  Neural Network: "models/neural_network_model.keras"
+
+# Data Processing
+scaler_path: "models/data_scaler.pkl"
+
+# Feature Ranges and Clinical Thresholds
+feature_thresholds:
+  baseline_value:
+    min: 106
+    max: 160
+    warning_threshold: 150
+  # Add other features...
+
+# Logging Configuration
+log_path: "logs/app.log"
+log_level: "INFO"
+
+# Authentication Settings
+auth:
+  session_duration: 3600  # 1 hour in seconds
+  max_login_attempts: 3
+  password_min_length: 8
+
+# API Configuration
+api:
+  enabled: true
+  port: 8000
+  rate_limit: 100  # requests per minute
+
+# Report Generation
+reports:
+  template_path: "templates/report_template.html"
+  logo_path: "static/logo.png"
+  organization_name: "Your Hospital Name"
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  alert_email: "admin@example.com"
