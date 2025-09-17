@@ -102,10 +102,11 @@ def train_models(data_path):
     joblib.dump(scaler, 'models/data_scaler.pkl')
     nn_model.save('models/neural_network_model.keras')
     check_model_creation()
-
+    
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    data_folder = os.path.join(current_dir, '..', 'data')
+    data_folder = os.path.join(current_dir, 'data')   # remove the '..'
     file_path = os.path.join(data_folder, 'fetal_health.csv')
-    
+
     train_models(file_path)
+
