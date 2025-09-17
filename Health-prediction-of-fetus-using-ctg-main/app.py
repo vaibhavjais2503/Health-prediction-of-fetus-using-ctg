@@ -4,14 +4,26 @@ import numpy as np
 import tensorflow as tf
 import plotly.graph_objects as go
 import pandas as pd
-import os
 import base64
 from datetime import datetime
+from pathlib import Path
 
-# Create necessary directories
-os.makedirs('data', exist_ok=True)
-os.makedirs('models', exist_ok=True)
-os.makedirs('logs', exist_ok=True)
+# ---------- Paths (safe for Streamlit Cloud & local) ----------
+BASE_DIR   = Path(__file__).resolve().parent
+MODELS_DIR = BASE_DIR / "models"
+...
+
+DATA_DIR   = BASE_DIR / "data"
+LOGS_DIR   = BASE_DIR / "logs"
+
+for d in (DATA_DIR, MODELS_DIR, LOGS_DIR):
+    d.mkdir(parents=True, exist_ok=True)
+
+# --- quick visibility so you can confirm the right file is running ---
+with st.sidebar:
+    st.caption(f"Running: {Path(__file__).as_posix()}")
+    st.caption(f"Models dir: {MODELS_DIR.as_posix()}")
+    st.caption(f"Models present: {[p.name for p in MODELS_DIR.glob('*')]}")
 
 # CTG feature list (order must match your training)
 features = [
@@ -28,7 +40,6 @@ features = [
     "histogram_variance", "histogram_tendency"
 ]
 
-# Keep prediction history in session
 if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
@@ -39,13 +50,19 @@ def get_download_link(df, filename, text):
 
 def load_models():
     try:
+        rf_path  = MODELS_DIR / "random_forest_model.pkl"
+        gb_path  = MODELS_DIR / "gradient_boosting_model.pkl"
+        svm_path = MODELS_DIR / "svm_model.pkl"
+        nn_path  = MODELS_DIR / "neural_network_model.keras"
+        sc_path  = MODELS_DIR / "data_scaler.pkl"
+
         models = {
-            'Random Forest': joblib.load('models/random_forest_model.pkl'),
-            'Gradient Boosting': joblib.load('models/gradient_boosting_model.pkl'),
-            'SVM': joblib.load('models/svm_model.pkl'),
-            'Neural Network': tf.keras.models.load_model('models/neural_network_model.keras')
+            'Random Forest': joblib.load(rf_path),
+            'Gradient Boosting': joblib.load(gb_path),
+            'SVM': joblib.load(svm_path),
+            'Neural Network': tf.keras.models.load_model(nn_path)
         }
-        scaler = joblib.load('models/data_scaler.pkl')
+        scaler = joblib.load(sc_path)
         return models, scaler
     except Exception as e:
         st.error(f"Error loading models: {e}")
@@ -90,8 +107,7 @@ def plot_radar_chart(input_data):
     return fig
 
 def plot_prediction_history():
-    if not st.session_state.prediction_history:
-        return None
+    if not st.session_state.prediction_history: return None
     df = pd.DataFrame(st.session_state.prediction_history)
     fig = go.Figure()
     for i, name in enumerate(["Normal","Suspicious","Pathological"]):
@@ -101,15 +117,13 @@ def plot_prediction_history():
     return fig
 
 def plot_feature_correlation_heatmap():
-    if len(st.session_state.prediction_history) < 2:
-        return None
+    if len(st.session_state.prediction_history) < 2: return None
     feats = pd.DataFrame([p['features'] for p in st.session_state.prediction_history[-50:]], columns=features)
     corr = feats.corr()
     return go.Figure(data=go.Heatmap(z=corr, x=features, y=features))
 
 def plot_feature_boxplots():
-    if len(st.session_state.prediction_history) < 5:
-        return None
+    if len(st.session_state.prediction_history) < 5: return None
     feats = pd.DataFrame([p['features'] for p in st.session_state.prediction_history[-50:]], columns=features)
     fig = go.Figure()
     for f in features:
@@ -131,7 +145,8 @@ def render_batch_prediction():
                 rows.append({'prediction': pred, 'confidence': float(np.max(prob))})
             out = pd.DataFrame(rows)
             st.dataframe(out)
-            st.markdown(get_download_link(out, 'predictions.csv', 'Download Predictions CSV'), unsafe_allow_html=True)
+            st.markdown(get_download_link(out, 'predictions.csv', 'Download Predictions CSV'),
+                        unsafe_allow_html=True)
 
 def render_prediction_page():
     models, scaler = load_models()
@@ -142,7 +157,8 @@ def render_prediction_page():
     col1, col2 = st.columns([1,3])
     with col1:
         st.header("Input Parameters")
-        x = [st.number_input(f.replace('_',' ').title(), step=0.1, format="%.2f") for f in features]
+        x = [st.number_input(f.replace('_',' ').title(), step=0.1, format="%.2f")
+             for f in features]
 
     with col2:
         st.header("Model Selection")
@@ -152,17 +168,17 @@ def render_prediction_page():
                 pred, prob = predict_fetal_health(x, models[model_choice], scaler, model_choice)
                 st.success(f"Predicted Fetal Health: {pred}")
                 tabs = st.tabs(["Probability Chart","Feature Radar","Prediction History","Feature Correlations","Feature Distributions"])
-                with tabs[0]: st.plotly_chart(plot_probability_bar_chart(prob))
-                with tabs[1]: st.plotly_chart(plot_radar_chart(x))
+                with tabs[0]: st.plotly_chart(plot_probability_bar_chart(prob), use_container_width=True)
+                with tabs[1]: st.plotly_chart(plot_radar_chart(x), use_container_width=True)
                 with tabs[2]:
                     h = plot_prediction_history()
-                    st.plotly_chart(h) if h else st.info("Make more predictions to see history")
+                    st.plotly_chart(h, use_container_width=True) if h else st.info("Make more predictions to see history")
                 with tabs[3]:
                     c = plot_feature_correlation_heatmap()
-                    st.plotly_chart(c) if c else st.info("More predictions needed for correlations")
+                    st.plotly_chart(c, use_container_width=True) if c else st.info("More predictions needed for correlations")
                 with tabs[4]:
                     b = plot_feature_boxplots()
-                    st.plotly_chart(b) if b else st.info("More predictions needed for distributions")
+                    st.plotly_chart(b, use_container_width=True) if b else st.info("More predictions needed for distributions")
 
 def main():
     st.title("Fetal Health Prediction")
